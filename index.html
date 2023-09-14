@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+</head>
+<body>
+    <h1>Weather App</h1>
+
+    <div id="weather-form">
+        <h2>Enter City</h2>
+        <input type="text" id="city-input" placeholder="Enter city">
+        <button id="submit-button">Get Weather</button>
+    </div>
+
+    <div id="weather-info" style="display: none;">
+        <h2>Weather Information</h2>
+        <p>Temperature: <span id="temperature"></span></p>
+        <p>Precipitation: <span id="precipitation"></span></p>
+        <p>Wind Speed: <span id="wind-speed"></span></p>
+        <p>Wind Direction: <span id="wind-direction"></span></p>
+    </div>
+
+    <script>
+        const weatherForm = document.getElementById('weather-form');
+        const cityInput = document.getElementById('city-input');
+        const submitButton = document.getElementById('submit-button');
+        const weatherInfo = document.getElementById('weather-info');
+        const temperature = document.getElementById('temperature');
+        const precipitation = document.getElementById('precipitation');
+        const windSpeed = document.getElementById('wind-speed');
+        const windDirection = document.getElementById('wind-direction');
+
+        submitButton.addEventListener('click', () => {
+            const city = cityInput.value.trim();
+
+            if (city) {
+                // Make a GET request to your Express.js API endpoint with the entered city
+                fetch(`/weather?city=${city}`)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        // Update the HTML with the weather data
+                        temperature.textContent = `${data.main.temp}°C`;
+                        precipitation.textContent = data.weather[0].description;
+                        windSpeed.textContent = `${data.wind.speed} m/s`;
+                        windDirection.textContent = `${data.wind.deg}°`;
+                        weatherInfo.style.display = 'block'; // Show weather info once data is available
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                        weatherInfo.innerHTML = 'An error occurred while fetching weather data.';
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
