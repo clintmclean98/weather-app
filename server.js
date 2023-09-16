@@ -6,6 +6,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const apiKey = process.env.WEATHER_API_KEY;
+const positionstackApi = process.env.POSITIONSTACK_API_KEY;
 
 // Set up Express
 app.use(express.static('public'));
@@ -29,16 +30,51 @@ async function getWeatherData(city) {
   }
 }
 
-// Define a GET API endpoint to retrieve weather data
 app.get('/weather', async (req, res) => {
-  const city = 'New York'; // Example city
+  const city = req.query.city; // Get the city from the query parameters
+
+  if (!city) {
+    return res.status(400).json({ error: 'City not provided' });
+  }
 
   try {
     const weatherData = await getWeatherData(city);
     res.json(weatherData);
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error(error);
+    if (error.response && error.response.status) {
+      // Handle specific HTTP error codes
+      res.status(error.response.status).json({ error: error.response.statusText });
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
+});
+
+
+app.get('/city-suggestions', async (req, res) => {
+    const query = req.query.city;
+    
+    if (!query || query.length < 3) {
+        return res.status(400).json({ error: 'Invalid query' });
+    }
+
+    try {
+        const response = await axios.get('http://api.positionstack.com/v1/forward', {
+            params: {
+                access_key: positionstackApi,
+                query: query,
+                limit: 5 // You can adjust the limit as needed
+            },
+        });
+
+        console.log(response.data);
+        const suggestions = response.data.data.map(suggestion => suggestion.label);
+        res.json(suggestions);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while fetching city suggestions' });
+    }
 });
 
 // Start the Express server
