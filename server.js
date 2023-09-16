@@ -24,9 +24,7 @@ async function getWeatherData(lat, lon)
         const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
 
         const response = await axios.get(apiUrl);
-        const weatherData = response.data;
-
-        return weatherData;
+        return response.data;
     } catch (error) {
         throw error;
     }
@@ -75,7 +73,6 @@ app.get('/city-suggestions', async (req, res) =>
             },
         });
 
-        console.log(response.data);
         const suggestions = response.data.data.map(suggestion => ({
             label: suggestion.label,
             latitude: suggestion.latitude,
