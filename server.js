@@ -12,51 +12,56 @@ const positionstackApi = process.env.POSITIONSTACK_API_KEY;
 app.use(express.static('public'));
 
 // Set up Express
-app.get('/', (req, res) => {
-  // Send the 'index.html' file as the response
-  res.sendFile('index.html', { root: __dirname });
+app.get('/', (req, res) =>
+{
+    // Send the 'index.html' file as the response
+    res.sendFile('index.html', {root: __dirname});
 });
 
-async function getWeatherData(city) {
-  try {
-    const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+async function getWeatherData(lat, lon)
+{
+    try {
+        const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
 
-    const response = await axios.get(apiUrl);
-    const weatherData = response.data;
-
-    return weatherData;
-  } catch (error) {
-    throw error;
-  }
+        const response = await axios.get(apiUrl);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
 }
 
-app.get('/weather', async (req, res) => {
-  const city = req.query.city; // Get the city from the query parameters
+app.get('/weather', async (req, res) =>
+{
+    const city = req.query.city; // Get the city from the query parameters
+    const lat = req.query.lat;
+    const lon = req.query.lon;
 
-  if (!city) {
-    return res.status(400).json({ error: 'City not provided' });
-  }
-
-  try {
-    const weatherData = await getWeatherData(city);
-    res.json(weatherData);
-  } catch (error) {
-    console.error(error);
-    if (error.response && error.response.status) {
-      // Handle specific HTTP error codes
-      res.status(error.response.status).json({ error: error.response.statusText });
-    } else {
-      res.status(500).json({ error: 'Internal Server Error' });
+    if (!lat || !lon) {
+        return res.status(400).json({error: 'City not provided'});
     }
-  }
+
+    try {
+        const weatherData = await getWeatherData(lat, lon);
+        res.json(weatherData);
+    } catch (error) {
+        console.error(error);
+        if (error.response && error.response.status) {
+            // Handle specific HTTP error codes
+            res.status(error.response.status).json({error: error.response.statusText});
+        }
+        else {
+            res.status(500).json({error: 'Internal Server Error'});
+        }
+    }
 });
 
 
-app.get('/city-suggestions', async (req, res) => {
+app.get('/city-suggestions', async (req, res) =>
+{
     const query = req.query.city;
-    
+
     if (!query || query.length < 3) {
-        return res.status(400).json({ error: 'Invalid query' });
+        return res.status(400).json({error: 'Invalid query'});
     }
 
     try {
@@ -64,20 +69,25 @@ app.get('/city-suggestions', async (req, res) => {
             params: {
                 access_key: positionstackApi,
                 query: query,
-                limit: 5 // You can adjust the limit as needed
+                limit: 8 // You can adjust the limit as needed
             },
         });
 
-        console.log(response.data);
-        const suggestions = response.data.data.map(suggestion => suggestion.label);
+        const suggestions = response.data.data.map(suggestion => ({
+            label: suggestion.label,
+            latitude: suggestion.latitude,
+            longitude: suggestion.longitude
+        }));
+        console.log(suggestions);
         res.json(suggestions);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'An error occurred while fetching city suggestions' });
+        res.status(500).json({error: 'An error occurred while fetching city suggestions'});
     }
 });
 
 // Start the Express server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(port, () =>
+{
+    console.log(`Server is running on port ${port}`);
 });
