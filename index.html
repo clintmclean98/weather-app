@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .error-message {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weather App</h1>
+
+    <div id="weather-form">
+        <h2>Enter City</h2>
+        <input type="text" id="city-input" placeholder="Enter city">
+        <select id="city-suggestions"></select>
+        <button id="submit-button">Get Weather</button>
+    </div>
+
+    <div id="weather-info" style="display: none;">
+        <h2>Weather Information</h2>
+        <p>Temperature: <span id="temperature"></span></p>
+        <p>Precipitation: <span id="precipitation"></span></p>
+        <p>Wind Speed: <span id="wind-speed"></span></p>
+        <p>Wind Direction: <span id="wind-direction"></span></p>
+    </div>
+
+    <p id="error-message" class="error-message"></p> <!-- Error message element -->
+
+    <script>
+        $(document).ready(function() {
+            const cityInput = $('#city-input');
+            const citySuggestions = $('#city-suggestions');
+            const submitButton = $('#submit-button');
+            const weatherInfo = $('#weather-info');
+            const temperature = $('#temperature');
+            const precipitation = $('#precipitation');
+            const windSpeed = $('#wind-speed');
+            const windDirection = $('#wind-direction');
+            const errorMessage = $('#error-message');
+
+            // Function to fetch city suggestions from your backend
+            function fetchCitySuggestions(query) {
+                $.ajax({
+                    url: `/city-suggestions?city=${query}`,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        // Clear previous suggestions
+                        citySuggestions.empty();
+
+                        // Populate the select element with the suggestions
+                        data.forEach(function(suggestion) {
+                            citySuggestions.append(
+                                $('<option>', {
+                                    value: suggestion,
+                                    text: suggestion
+                                })
+                            );
+                        });
+
+                        hideError();
+                    },
+                    error: function(error) {
+                        console.error(error);
+                        citySuggestions.empty();
+                        showError('An error occurred while fetching city suggestions.');
+                    }
+                });
+            }
+
+            // Event handler for input changes (as the user types)
+            cityInput.on('input', function() {
+                const query = cityInput.val().trim();
+
+                if (query.length >= 3) {
+                    fetchCitySuggestions(query);
+                } else {
+                    citySuggestions.empty();
+                }
+            });
+
+            // Function to show an error message
+            function showError(message) {
+                weatherInfo.hide();
+                errorMessage.text(message);
+                errorMessage.show();
+            }
+
+            // Function to hide the error message
+            function hideError() {
+                errorMessage.text('');
+                errorMessage.hide();
+            }
+
+            submitButton.click(function() {
+                const selectedCity = citySuggestions.val(); // Get the selected city from the dropdown
+
+                if (selectedCity) {
+                    // Use jQuery.ajax to make a GET request to your Express.js API endpoint with the selected city
+                    $.ajax({
+                        url: `/weather?city=${selectedCity}`,
+                        method: 'GET',
+                        dataType: 'json',
+                        success: function(data) {
+                            // Update the HTML with the weather data
+                            temperature.text(`${data.main.temp}°C`);
+                            precipitation.text(data.weather[0].description);
+                            windSpeed.text(`${data.wind.speed} m/s`);
+                            windDirection.text(`${data.wind.deg}°`);
+                            weatherInfo.css('display', 'block'); // Show weather info once data is available
+                            hideError(); // Hide any previous error message
+                        },
+                        error: function(error) {
+                            console.error(error);
+                            weatherInfo.hide(); // Hide weather info in case of an error
+                            showError('An error occurred while fetching weather data.'); // Show error message
+                        }
+                    });
+                } else {
+                    showError('Please select a city from the dropdown.'); // Show error message if no city is selected
+                }
+            });
+        });
+    </script>
+</body>
+</html>
